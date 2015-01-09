@@ -4,7 +4,7 @@
 # last modified Dec.4, 2014
 # first written Dec.4, 2014
 
-setwd("C:/Codes_R_analysis_for_Phd/600KSNPchip")
+setwd("C:/Data/600KSNPchip")
 
 bigregionSNPs <- read.table("Analysis/finemappingSNPswithannotation.txt", sep = "\t", header=TRUE)    # load the SNPs for fine mapping which are in the big region(3855 SNPs)
 

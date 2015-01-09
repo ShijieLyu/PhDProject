@@ -4,7 +4,7 @@
 # last modified Dec, 2014
 # first written Dec, 2014
 
-setwd("C:/Codes_R_analysis_for_Phd/RedotheQTLanalysis")
+setwd("C:/Data/RedotheQTLanalysis")
 
 genotypes <- read.table("RawData/genotypes.txt", sep="\t", na.strings = ".", header=TRUE)                                 # Load the genotypes
 bodycomposition <- read.table("RawData/bodycomposition.txt", sep="\t", na.strings = ".", header=TRUE)[, -1]               # Load the phenotypes

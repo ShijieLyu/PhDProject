@@ -4,7 +4,7 @@
 # last modified Dec, 2014
 # first written Dec, 2014
 
-setwd("C:/Codes_R_analysis_for_Phd/600KSNPchip")
+setwd("C:/Data/600KSNPchip")
 
 SNPsforfinemapping <- read.table("Analysis/SNPsforfinemapping.txt", sep="\t", header=TRUE)
 chipannotation     <- read.table("RawData/chickenNumber.txt", sep ="\t", header=TRUE)

@@ -4,7 +4,7 @@
 # last modified Dec, 2014
 # first written Dec, 2014
 
-setwd("C:/Codes_R_analysis_for_Phd/600KSNPchip")
+setwd("C:/Data/600KSNPchip")
 
 genotypes <- read.table("RawData/600kSNPgenotypes.txt", sep="\t", na.strings = "-1", header=TRUE)                                 # Load the genotypes
 annotation <- read.table("RawData/Axiom_GW_GT_Chicken.na34.annot.csv", sep=",", na.strings = "---", header=TRUE)                  # Load the annotation

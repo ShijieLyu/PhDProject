@@ -4,7 +4,7 @@
 # last modified Dec, 2014
 # first written Dec, 2014
 
-setwd("C:/Codes_R_analysis_for_Phd/600KSNPchip")    
+setwd("C:/Data/600KSNPchip")    
 
 snpsbigregion <- read.table("Analysis/finemappingSNPswithannotation.txt", sep = "\t", header=TRUE)  # load the full data
 snpslocation <- snpsbigregion[,"Physical.Position"]                                                 # load the col-name which means location 
