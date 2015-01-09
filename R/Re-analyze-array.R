@@ -3,7 +3,6 @@
 # last modified Dec, 2014
 # first written Dec, 2014
 
-
 setwd("C:/Data/Array")
 arrays <- read.table("RawData/arrays.txt", sep="\t", header=TRUE, colClasses = "character")
 
@@ -42,7 +41,6 @@ if(!file.exists("Analysis/fatdata.txt")){
 }
 ### Quality control !!!
 plot(hclust(dist(t(fatdata[,c(group1,group2)]))))
-
 
 ### Create a fasta file, and blast to the genome, re annotate the data that we have
 if(!file.exists("Analysis/probes.fasta")){
@@ -140,8 +138,6 @@ write.table(ProbesinGenes, row.names = FALSE, "Analysis/ProbesinGenesTtest&Mean.
 snpsbigregion <- read.table("C:/Codes_R_analysis_for_Phd/600KSNPchip/Analysis/finemappingSNPswithannotation.txt", sep = "\t", header=TRUE)  # load the full data
 snpsmallregion <- read.table("C:/Codes_R_analysis_for_Phd/600KSNPchip/Analysis/finemappingSNPinsmallregion.txt", sep = "\t", header=TRUE)  # load the full data
  
-
-
 SortMean <- sort(ProbesinGenes[,"Mean"],decreasing = TRUE, index.return = TRUE) 
 SortProbesusingMeans <- ProbesinGenes[SortMean$ix[1:353],]                                        # here can change the Number  TOP 30 or 40 or...100
 write.table(SortProbesusingMeans, row.names = FALSE, "Analysis/SortProbesusingMeans.txt", sep="\t") 
@@ -186,7 +182,6 @@ for(x in 1:nG){
 
 points(x= snpsbigregion[,"Physical.Position"] , y= rep(0.5, length(snpsbigregion[,"Physical.Position"])), pch="|")
 points(x=c(Smallregionstart,Smallregionend), y=rep(0.5,2), pch = "|", col="red", cex=2)
-# points(x=c(75258441,76170633),y=rep(0.5,2), pch = "|", col="blue", cex=2)   ## the reference showed two SNPs rs15619099(4:75258441) and rs14491627(4:76170633)
 
 dev.off()
 
