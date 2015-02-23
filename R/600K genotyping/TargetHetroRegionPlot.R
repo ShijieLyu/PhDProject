@@ -7,8 +7,22 @@ setwd("C:/Data/600KSNPchip")
 
 POP1 <- read.table("Analysis/HetroRatioPOP1-100.txt", header=TRUE)    # load the Population 1 Hetro Ratio
 POP2 <- read.table("Analysis/HetroRatioPOP2-100.txt", header=TRUE)    # load the Population 2 Hetro Ratio
-POP1Thr <- read.table("Analysis/thresholdperChrPOP1-100.txt", header=TRUE)   # Load the threshold for Population 1 under 100 permutation
-POP2Thr <- read.table("Analysis/thresholdperChrPOP2-100.txt", header=TRUE)   # Load the threshold for Population 2 under 100 permutation
+POP1Thr <- read.table("Analysis/thresholdperChrPOP1-1000.txt", header=TRUE)   # Load the threshold for Population 1 under 1000 times permutation
+POP2Thr <- read.table("Analysis/thresholdperChrPOP2-1000.txt", header=TRUE)   # Load the threshold for Population 2 under 1000 times permutation
+
+POP1matrix <- as.matrix(1:32)                                         # The format of the POP1Thr is nor correct, here I re-organised it
+POP1ThrChr <- as.character(POP1Thr[seq(1,64,2),])
+POP1ThrScore <- as.numeric(as.character(POP1Thr[seq(2,64,2),]))
+rownames(POP1matrix) <- POP1ThrChr
+POP1matrix[,1] <- POP1ThrScore
+POP1Thr <- POP1matrix
+
+POP2matrix <- as.matrix(1:32)
+POP2ThrChr <- as.character(POP2Thr[seq(1,64,2),])
+POP2ThrScore <- as.numeric(as.character(POP2Thr[seq(2,64,2),]))
+rownames(POP2matrix) <- POP2ThrChr
+POP2matrix[,1] <- POP2ThrScore
+POP2Thr <- POP2matrix
 
 colnames(POP1Thr) <- c("threshold")
 colnames(POP2Thr) <- c("threshold")
@@ -37,7 +51,7 @@ chrinfo <- read.table("RawData/chromosomeinfo.txt", header=TRUE)     # Load the 
 chromosomes <- chrinfo[,"Chromosome"]
 mlength <- max(chrinfo[,"Length"]) * 1.10              
 
-pdf("Analysis/TwoBreedsHetroComparison_Verital.pdf")                 
+pdf("Analysis/TwoBreedsHetroComparison_Verital_1000.pdf")                 
 plot(y=c(0,  mlength), x=c(0, nrow(chrinfo)) + 0.5, t='n', yaxt="n", xlab="Chromosome", ylab="Location (Mbp)", xaxt="n")     # Make a frame
 
 invisible(apply(chrinfo, 1, function(mrow){                          # Plot the Chromosomes
@@ -68,7 +82,7 @@ chrinfo <- chrinfo[rev(seq_len(nrow(chrinfo))),]           # Reverse the Chr ord
 chromosomes <- chrinfo[,"Chromosome"]
 mlength <- max(chrinfo[,"Length"]) * 1.10
 
-pdf("Analysis/TwoBreedsHetroComparison_Horizontal.pdf")
+pdf("Analysis/TwoBreedsHetroComparison_Horizontal_1000.pdf")
 plot(x=c(0,mlength), y=c(0,nrow(chrinfo)), type= "n", xaxt="n", xaxs='i', yaxt="n", xlab="Location(Mbp)", ylab="Chromosome")
 
 yStep <- 1
