@@ -4,7 +4,7 @@
 # first written Feb, 2015
 
 setwd("C:/Data/TargetSNPsSequence-Primer") 
-SNPs <- read.table("5-SNP-ID.txt", header=TRUE)  # load the 5 Target SNPs info. (5 SNPs were selected based on the SNP selection results-- a total of 37, and the knowledge, literature)
+SNPs <- read.table("5-More-SNP-ID.txt", header=TRUE)  # load the 5 Target SNPs info. (5 SNPs were selected based on the SNP selection results-- a total of 37, and the knowledge, literature)
 
 # source("http://bioconductor.org/biocLite.R")
 # biocLite("BSgenome.Ggallus.UCSC.galGal4")      # download the gallus4 genomics
@@ -24,4 +24,4 @@ for (x in 1:nrow(SNPs)){
   SNPsSequence <- rbind(SNPsSequence, SequenceperSNP)
 }
 colnames(SNPsSequence) <- c("SNP.ID", "SNP_Location", "SequenceLocation", "Sequence")
-write.table(SNPsSequence,"5_Target_SNPs_Sequence.txt", row.names =FALSE, sep="\t")
+write.table(SNPsSequence,"5_More.Target_SNPs_Sequence.txt", row.names =FALSE, sep="\t")
