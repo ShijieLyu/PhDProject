@@ -1,4 +1,4 @@
-# Get the significant region with high Hetro/Homo ratio and plot it
+# Get the significant region with high Hetro/Homo ratio and plot it in F5, POP1 and POP2
 # copyright (c) 2014-2020 - Brockmann group - HU Berlin, Danny Arends & Shijie Lyu
 # last modified Feb, 2015
 # first written Feb, 2015
