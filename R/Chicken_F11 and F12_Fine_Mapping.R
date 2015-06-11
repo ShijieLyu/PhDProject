@@ -43,7 +43,7 @@ F12QTLdata <- F12QTLdata[which(!is.na(F12QTLdata[,"Gew_20Wo"]) & F12QTLdata[,"Fu
 ### 4-Combine the F11 and F12 data in one file
 QTLdata1112 <- rbind(F11QTLdata,F12QTLdata) 
 
-### 5-Association analysis 
+### 5-Association analysis for F11 and F12 growth Traits
 GrowthTraits  <- c("Gew_1d","Gew_5Wo","Gew_10Wo","Gew_15Wo","Gew_20Wo","BWG05","BWG510","BWG1015","BWG1520")
 SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
 
@@ -113,7 +113,7 @@ annotation <- read.table("D:/Chicken/600KSNPchip/RawData/Axiom_GW_GT_Chicken.na3
 SNPsforfinemapping <- read.table("D:/Chicken/600KSNPchip/Analysis/SNPsforfinemapping.txt", sep ="\t", header=TRUE)
 chipannotation <- read.table("D:/Chicken/600KSNPchip/RawData/chickenNumber.txt", sep ="\t", header=TRUE)
 
-SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
+SNPsForAnalysis <- c("rs10725580", "rs316584759", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
 
 number <- NULL                                                        # the ProbeID for every SNP
 for (OneSNP in SNPsForAnalysis){
@@ -275,28 +275,11 @@ for(x in 1:9){
 }
 dev.off()
 
-### Permutation and the CI
+### 13- Permutation and the CI
 
 GrowthTraits  <- c("Gew_1d","Gew_5Wo","Gew_10Wo","Gew_15Wo","Gew_20Wo","BWG05","BWG510","BWG1015","BWG1520")
 Covs  <- c("Generation","Family","Schlupf")
 SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
-
-permutation <- function()
-
-MaxLods <- NULL
-for (x in 1:10){
-
-  for (OneSNP in SNPsForAnalysis){
-    res <- anova(lm(as.numeric(QTLdata1112[,Phenotype]) ~ QTLdata1112[,"Generation"] + QTLdata1112[,"Family"] + QTLdata1112[,"Schlupf"] + QTLdata1112[sample(nrow(QTLdata1112)),OneSNP]))
-    EachTraitPvalue <- rbind(EachTraitPvalue, -log10(res[[5]]))
-    colnames(EachTraitPvalue) <- c("Generation","Family","Schlupf","SNP", "Residuals")
-  } 
-  MaxLods <- c(MaxLods, max(EachTraitPvalue[,"SNP"]))
-}
-
-
-
-
 
 # Variables
 genotypes    <- QTLdata1112[,SNPsForAnalysis]
@@ -321,19 +304,25 @@ realData <- mapQTLs(genotypes, phenotypes, covariates)
 
 
 # Permutation for getting an overall 95 % confidence interval (corrected for N markers and N phenotypes
-maxes <- NULL
-for(p in 1:1000){
-   ngenotypes <- genotypes[sample(nrow(genotypes)), ]
-   res <- mapQTLs(ngenotypes, phenotypes, covariates)
-   maxes <- c(maxes, max(res))
-   #cat("Finished permutation", p,"\n")
+if(!file.exists("Analysis/LODmaxesPermutation-1000.txt")){
+  maxes <- NULL
+  for(p in 1:1000){
+     ngenotypes <- genotypes[sample(nrow(genotypes)), ]
+     res <- mapQTLs(ngenotypes, phenotypes, covariates)
+     maxes <- c(maxes, max(res))
+     #cat("Finished permutation", p,"\n")
+  }
+     write.table(maxes,"Analysis/LODmaxesPermutation-1000.txt",sep="\t")
+  }else{                                                                                                        # Or load them from Disk if we already have them
+  cat("Loading Unique probes information from disk\n")
+  maxes <- read.table("Analysis/LODmaxesPermutation-1000.txt",sep="\t", header=TRUE)
 }
-#write.table(maxes,"Analysis/LODmaxesPermutation-1000.txt",sep="\t")
+
 # Null-distribution
-hist(maxes)
+hist(maxes[,1])
 
 # Cut-off for significance 95 %
-Threshold <- sort(maxes)[1000 * 0.95]       #<- Threshold
+Threshold <- sort(maxes[,1])[1000 * 0.95]       #<- Threshold = 3.179255
 
 pdf("Analysis/AllSnpsPlot-1000perputation.pdf")
 par(mfrow=c(3,3))
@@ -345,7 +334,37 @@ for(x in 1:9){
 }
 dev.off()
 
+## Confidence Interval
+if(!file.exists("Analysis/CIboots.txt")){
+  boots <- NULL
+  for(x in 1:1000){
+    idx <- sample(nrow(genotypes), 97, replace=TRUE)
+    boots <- rbind(boots, mapQTLs(genotypes[idx, ], phenotypes[idx,], covariates))
+  }
+    write.table(boots,"Analysis/CIboots.txt",sep="\t")
+  }else{                                                                                                        # Or load them from Disk if we already have them
+  cat("Loading Unique probes information from disk\n")
+  maxes <- read.table("Analysis/CIboots.txt",sep="\t", header=TRUE)
+}
 
+Allbot <- NULL
+for (trait in GrowthTraits){
+  Eachbot <- apply(boots[which(rownames(boots)== trait),], 2, function(x){sort(x)[1000 * 0.025]})
+  Allbot <- rbind(Allbot ,Eachbot) 
+}
+rownames(Allbot) <- GrowthTraits
 
+#top <- apply(boots, 2, function(x){sort(x)[1000 * 0.975]})
+#bot <- apply(boots, 2, function(x){sort(x)[1000 * 0.025]})
 
+pdf("Analysis/AllTraitwithCI.pdf")
+par(mfrow=c(3,3))
+for(x in 1:9){
+  plot(x=c(0,10), y=c(0,6), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTPvalue)[x])
+  points(-log10(GTPvalue[[x]][,4]),t="l")
+  abline(h= 3.179255, lty=2)    # Threshold = sort(maxes[,1])[1000 * 0.95] = 3.179255
+  abline(h=Allbot[x,which.max(-log10(GTPvalue[[x]][,4]))], lty=2, col="orange")
+  axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
+}
+dev.off()
 
