@@ -43,23 +43,7 @@ startOn4 <- 59553432                                                            
 endOn4   <- 84774762                                                              # End of our region
 
 SNPsinBigRegionDNAseq <- SNPsinChr4[which(SNPsinChr4[,"POS"] > startOn4 & SNPsinChr4[,"POS"] < endOn4),]  # The SNPs in our big region
-# SNPsinBigRegionDNAseq <- SNPsinChr4[-which(SNPsinChr4[,"GT6929"] == "0/0" & SNPsinChr4[,"GT6954"] == "0/0" & SNPsinChr4[,"GT8425"] == "0/0"),]  # =0
-a <- SNPsinChr4[which(SNPsinChr4[,"GT6929"] == "0/0" & SNPsinChr4[,"GT6954"] == "0/0" & SNPsinChr4[,"GT8425"] == "1/1"),]
-b <- SNPsinChr4[which(SNPsinChr4[,"GT6929"] == "1/1" & SNPsinChr4[,"GT6954"] == "1/1" & SNPsinChr4[,"GT8425"] == "0/0"),]
-SNPsInterestinginDNAseq <- rbind(a,b)   # the SNPs which is HOMO but different in the lines
-
-## The overlap of the 600KSNP chip, DNA-seq and 60kSNP-chip
-SNPs <- read.table("C:/Data/60KSNPchip/RawData/Full Data Table_3parents.txt",header=TRUE,sep="\t")
-name1 <- SNPsinbigregion[,"dbSNP.RS.ID"]
-name2 <- SNPsInterestinginDNAseq[,"ID"]
-name3 <- SNPs[,"Name"]
-name1new<- paste0("Gga_",name1)
-name2new <- paste0("Gga_",name2)
-
-name1[which(name1 %in% name2)]
-name1new[which(name1new %in% name3)]
-name2new[which(name2new %in% name3)]   # Finaly, only 24 overlap!!!!!
-
+SNPsinBigRegionDNAseq <- SNPsinChr4[-which(SNPsinChr4[,"GT6929"] == "0/0" & SNPsinChr4[,"GT6954"] == "0/0" & SNPsinChr4[,"GT8425"] == "0/0"),]
 
 ## Based on the dbSNPs and DNA-seq-SNPs in the big region, filter and select the target SNPs
 
