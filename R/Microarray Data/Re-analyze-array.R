@@ -135,8 +135,8 @@ write.table(ProbesinGenes, row.names = FALSE, "Analysis/ProbesinGenesTtest&Mean.
 ### Get the TOP25 Probes with high Means and make a plot  
 ### Since correlation between individuals is too high, and no significant genes are found, So, just select the TOP25 using the mean value
 
-snpsbigregion <- read.table("C:/Codes_R_analysis_for_Phd/600KSNPchip/Analysis/finemappingSNPswithannotation.txt", sep = "\t", header=TRUE)  # load the full data
-snpsmallregion <- read.table("C:/Codes_R_analysis_for_Phd/600KSNPchip/Analysis/finemappingSNPinsmallregion.txt", sep = "\t", header=TRUE)  # load the full data
+snpsbigregion <- read.table("C:/Data/600KSNPchip/Analysis/finemappingSNPswithannotation.txt", sep = "\t", header=TRUE)  # load the full data
+snpsmallregion <- read.table("C:/Data/600KSNPchip/Analysis/finemappingSNPinsmallregion.txt", sep = "\t", header=TRUE)  # load the full data
  
 SortMean <- sort(ProbesinGenes[,"Mean"],decreasing = TRUE, index.return = TRUE) 
 SortProbesusingMeans <- ProbesinGenes[SortMean$ix[1:353],]                                        # here can change the Number  TOP 30 or 40 or...100
