@@ -13,15 +13,17 @@ F12Traits <- read.table("Analysis/F12_QTLdataWithBWG-Geno NA fill in.txt", na.st
 
 F11SNPnames <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
 
-F11LDGenotypes <- F11genotypes[,c("ID.Nr",F11SNPnames)]
-for (mrow in 1:nrow(F11LDGenotypes)){
-  onerow <- NULL
-  for (mcol in 2:ncol(F11LDGenotypes)){
-    alleleA <- strsplit(as.character(F11LDGenotypes[mrow,mcol]),"")[[1]][1]
-    alleleB <- strsplit(as.character(F11LDGenotypes[mrow,mcol]),"")[[1]][2]
-    onerow <- cbind(onerow, paste(alleleA,alleleB))
-  }
+if(!file.exists("Analysis/F11LDGenotypes.txt")){
+  F11LDGenotypes <- F11genotypes[,c("ID.Nr",F11SNPnames)]
+  for (mrow in 1:nrow(F11LDGenotypes)){
+    onerow <- NULL
+    for (mcol in 2:ncol(F11LDGenotypes)){
+      alleleA <- strsplit(as.character(F11LDGenotypes[mrow,mcol]),"")[[1]][1]
+      alleleB <- strsplit(as.character(F11LDGenotypes[mrow,mcol]),"")[[1]][2]
+      onerow <- cbind(onerow, paste(alleleA,alleleB))
+    }
   cat(c(as.character(F11LDGenotypes[mrow,"ID.Nr"]),onerow), "\n", file="Analysis/F11LDGenotypes.txt", append = TRUE)
+  }
 }
 
 ### 2-Add the bodyweight gain and the genotypes in the F11QTLdata
@@ -81,14 +83,7 @@ for(x in 1:9){
 }
 dev.off()
 
-pdf("Analysis/BWG1520.pdf")
-plot(x=c(0,10), y=c(0,6), t="n", ylab="LOD Score", xlab="", xaxt="n")
-points(-log10(GTPvalue$BWG1520[,"SNP"]),t="l")
-abline(h=-log10(0.05/(9*9)), lty=2)    # Threshold = -log10(0.05/(9*9))
-axis(1, at=1:9, names(a), las=2, cex.axis = 0.77)
-dev.off()
-
-### 6-Correct the phenotype data 
+### 6-Correct the phenotypic data 
 AllCorPheno <- NULL
 for (Phenotype in GrowthTraits){
   onlyEnv <- lm(as.numeric(QTLdata1112[,Phenotype]) ~ QTLdata1112[,"Generation"] + QTLdata1112[,"Family"] + QTLdata1112[,"Schlupf"])
@@ -100,10 +95,10 @@ CorQTLdata1112 <- cbind(QTLdata1112[,c("ID.Nr","Generation","Family","Schlupf")]
 #write.table(CorQTLdata1112,"Analysis/CorQTLdata1112.txt",sep="\t",row.names = FALSE,quote = FALSE)
 
 SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
-pdf("Analysis/rs312839183.pdf")
+pdf("Analysis/rs315966269.pdf")
 par(mfrow=c(3,3))
 for (Phenotype in GrowthTraits){ 
-  plot(CorQTLdata1112[,Phenotype]~ CorQTLdata1112[,"rs312839183"], ylab="Body Weight(g)", xlab= "Genotypes", main= Phenotype)
+  plot(CorQTLdata1112[,Phenotype]~ CorQTLdata1112[,"rs315966269"], ylab="Body Weight(g)", xlab= "Genotypes", main= Phenotype)
 }
 dev.off()
 
@@ -142,8 +137,8 @@ SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "
 F12AT20W  <- names(F12AllTraits20Week)[-c(99,104)]
 F12AT20W  <- c(GrowthTraits, F12AT20W[c(37:39,41:143)])
 
-F12AT20WPvalue <- vector("list", length(F12AT20W)) 
-names(F12AT20WPvalue) <- F12AT20W
+F12AT20WLod <- vector("list", length(F12AT20W)) 
+names(F12AT20WLod) <- F12AT20W
 
 for (Phenotype in F12AT20W){                                                       # Model after selection
   EveryTraitPvalue <- NULL
@@ -157,23 +152,46 @@ for (Phenotype in F12AT20W){                                                    
         for (x in 1:4){
           Pfactors <- c(Pfactors, round((sum(res[x,2])/sum(res[2]))*100, digits = 2))    # percentage(contribution) per factor
         }
-      EveryTraitPvalue <- rbind(EveryTraitPvalue, c(res[[5]],Pfactors))
+      EveryTraitPvalue <- rbind(EveryTraitPvalue, c(-log10(res[[5]]),Pfactors))
       colnames(EveryTraitPvalue) <- c("Family","Schlupf","SNP", "Residuals","Family%","Schlupf%","SNP%", "Residuals%")  
       }
     rownames(EveryTraitPvalue) <- SNPsForAnalysis
-    F12AT20WPvalue[[Phenotype]] <- EveryTraitPvalue
+    F12AT20WLod[[Phenotype]] <- EveryTraitPvalue
   }
 }
-F12AT20WPvalue$Gew_15Wo
+F12AT20WLod$Gew_15Wo
 threshold <- -log10(0.05/9)
-library(marray)
-write.list(F12AT20WPvalue,"Analysis/F12AllTraits20WeekLod--Geno NA fill in.txt")
+#library(marray)
+#write.list(F12AT20WLod,"Analysis/F12AllTraits20WeekLod--Geno NA fill in.txt")
 
-for(x in 1:length(F12AT20WPvalue)){
-  SigSNP <- which(F12AT20WPvalue[[x]][,"SNP"] > threshold)                                                      # Analyse the resulting profiles, and look at which markers are above the threshold
-  cat(names(F12AT20WPvalue)[x], names(SigSNP),"\n",file = "Analysis/F12AllTraits20WLinkageAnalysis.txt",append=TRUE)                                                                  
+if(!file.exists("Analysis/F12AllTraits20WLinkageAnalysis.txt")){           
+  for(x in 1:length(F12AT20WLod)){
+    SigSNP <- which(F12AT20WLod[[x]][,"SNP"] > threshold)                                                      # Analyse the resulting profiles, and look at which markers are above the threshold
+    cat(names(F12AT20WLod)[x], names(SigSNP),"\n",file = "Analysis/F12AllTraits20WLinkageAnalysis.txt",append=TRUE)                                                                  
+  }
+  SigSNP <- read.table("Analysis/F12AllTraits20WLinkageAnalysis.txt",sep="\t", header=FALSE)
+}else{
+  cat("Loading Linkage Analysis information from disk\n")
+  SigSNP <- read.table("Analysis/F12AllTraits20WLinkageAnalysis.txt",sep="\t", header=FALSE)   # I remove the Space at the end of each traits manually!!!!!
 }
 
+### Make a plot for the Significant traits
+SigTraits <- NULL                                                                                      
+for (x in 1:nrow(SigSNP)){
+  if(length(unlist(strsplit(as.character(SigSNP[x,1]), " "))) > 1) {
+  SigTraits <- c(SigTraits, strsplit(as.character(SigSNP[x,1]), " ")[[1]][1])
+  }
+}
+
+pdf("Analysis/SigBodycomposition.pdf")
+par(mfrow=c(4,4))
+for(SigTrait in SigTraits){
+  plot(x=c(0,10), y=c(0,5), t="n", ylab="LOD Score", xlab="", xaxt="n", main= SigTrait)
+  points(F12AT20WLod[[SigTrait]][,3],t="l")
+  abline(h=-log10(0.05/9), lty=2)    
+  axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
+}
+dev.off()
 
 ### 9- Correlation for all traits
 F12TraitsName <- names(F12Traits)[20:149]
@@ -314,7 +332,7 @@ if(!file.exists("Analysis/LODmaxesPermutation-1000.txt")){
   }
      write.table(maxes,"Analysis/LODmaxesPermutation-1000.txt",sep="\t")
   }else{                                                                                                        # Or load them from Disk if we already have them
-  cat("Loading Unique probes information from disk\n")
+  cat("Loading Permutation information from disk\n")
   maxes <- read.table("Analysis/LODmaxesPermutation-1000.txt",sep="\t", header=TRUE)
 }
 
@@ -339,20 +357,35 @@ if(!file.exists("Analysis/CIboots.txt")){
   boots <- NULL
   for(x in 1:1000){
     idx <- sample(nrow(genotypes), 97, replace=TRUE)
-    boots <- rbind(boots, mapQTLs(genotypes[idx, ], phenotypes[idx,], covariates))
+    boots <- rbind(boots, mapQTLs(genotypes[idx, ], phenotypes[idx,], covariates[idx,]))
   }
     write.table(boots,"Analysis/CIboots.txt",sep="\t")
   }else{                                                                                                        # Or load them from Disk if we already have them
-  cat("Loading Unique probes information from disk\n")
-  maxes <- read.table("Analysis/CIboots.txt",sep="\t", header=TRUE)
+  cat("Loading boots information from disk\n")
+  boots <- read.table("Analysis/CIboots.txt",sep="\t", header=TRUE, row.names=NULL)
 }
+
+# Get the 10 week data
+G10wB <- boots[which(boots[,"row.names"] == "Gew_10Wo"),]
+
+# What is the top marker
+topM <- names(which.max(realData["Gew_10Wo",]))
+
+# What is the LOD score below we are out of the confidence interval
+BootI <- sort(G10wB[,topM])[1000 * 0.025]
+
+plot(c(0,9), c(0,10), t = 'n')
+points(realData["Gew_10Wo",], t = 'l')
+abline(h=BootI)
+
 
 Allbot <- NULL
 for (trait in GrowthTraits){
-  Eachbot <- apply(boots[which(rownames(boots)== trait),], 2, function(x){sort(x)[1000 * 0.025]})
+  Eachbot <- apply(boots[which(boots[,"row.names"] == trait),], 2, function(x){sort(x)[1000 * 0.025]})
   Allbot <- rbind(Allbot ,Eachbot) 
 }
 rownames(Allbot) <- GrowthTraits
+Allbot <- Allbot[,-(1:2)]
 
 #top <- apply(boots, 2, function(x){sort(x)[1000 * 0.975]})
 #bot <- apply(boots, 2, function(x){sort(x)[1000 * 0.025]})
@@ -362,9 +395,11 @@ par(mfrow=c(3,3))
 for(x in 1:9){
   plot(x=c(0,10), y=c(0,6), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTPvalue)[x])
   points(-log10(GTPvalue[[x]][,4]),t="l")
-  abline(h= 3.179255, lty=2)    # Threshold = sort(maxes[,1])[1000 * 0.95] = 3.179255
-  abline(h=Allbot[x,which.max(-log10(GTPvalue[[x]][,4]))], lty=2, col="orange")
+  abline(h = 3.179255, lty=1)    # Threshold = sort(maxes[,1])[1000 * 0.95] = 3.179255
+  abline(h = Allbot[x,which.max(-log10(GTPvalue[[x]][,4]))], lty=2)
   axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
 }
 dev.off()
+
+
 
