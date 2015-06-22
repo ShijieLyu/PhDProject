@@ -38,7 +38,7 @@ covariates   <- QTLdata1112[,Covs]
 # Function to map QTLs
 mapQTLs <- function(genotypes, phenotypes, covariates){
   # Matrix LOD scores of markers x phenotypes
-  LODS <- matrix(NA, ncol(genotypes), ncol(phenotypes),dimnames=list(colnames(phenotypes), colnames(genotypes))) # Markers x phenotypes
+  LODS <- matrix(NA, ncol(phenotypes), ncol(genotypes),dimnames=list(colnames(phenotypes), colnames(genotypes))) # Markers x phenotypes
   for(x in 1:ncol(phenotypes)){  #cat(x,"\n")
     for(y in 1:ncol(genotypes)){ #cat(y,"\n")
       res <- anova(lm(as.numeric(phenotypes[,x]) ~ covariates[,"Generation"] + covariates[,"Family"] + covariates[,"Schlupf"] + genotypes[,y]))
