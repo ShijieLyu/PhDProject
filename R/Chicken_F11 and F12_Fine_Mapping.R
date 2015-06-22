@@ -73,15 +73,15 @@ GTPvalue$Gew_15Wo
 GrowthTraits  <- c("Gew_1d","Gew_5Wo","Gew_10Wo","Gew_15Wo","Gew_20Wo","BWG05","BWG510","BWG1015","BWG1520")
 SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
 
-pdf("Analysis/AllSnpsPlot.pdf")
-par(mfrow=c(3,3))
-for(x in 1:9){
-  plot(x=c(0,10), y=c(0,6), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTPvalue)[x])
-  points(-log10(GTPvalue[[x]][,4]),t="l")
-  abline(h=-log10(0.05/(9*9)), lty=2)    # Threshold = -log10(0.05/(9*9))
-  axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
-}
-dev.off()
+#pdf("Analysis/AllSnpsPlot.pdf")
+#par(mfrow=c(3,3))
+#for(x in 1:9){
+  #plot(x=c(0,10), y=c(0,6), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTPvalue)[x])
+  #points(-log10(GTPvalue[[x]][,4]),t="l")
+  #abline(h=-log10(0.05/(9*9)), lty=2)    # Threshold = -log10(0.05/(9*9))
+  #axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
+#}
+#dev.off()
 
 ### 6-Correct the phenotypic data 
 AllCorPheno <- NULL
@@ -208,7 +208,7 @@ F12TraitsCor <- cor(data.matrix(F12TraitsOnly),method="spearman",use = "pairwise
 plot(hclust(dist(t(F12TraitsCor))), cex=0.3)
 dev.off()
 
-cor(F12TraitsOnly[,"Abdominalfett"],F12TraitsOnly[, GrowthTraits],method="spearman",use = "pairwise")
+cor(F12TraitsOnly[,"Abdominalfett"],F12TraitsOnly[, "BW.nuchtern"], method="spearman", use = "pairwise")
 
 ### 10- Catch the genes in the target Region
 
