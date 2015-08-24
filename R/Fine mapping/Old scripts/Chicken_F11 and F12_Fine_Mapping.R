@@ -5,6 +5,8 @@
 
 
 setwd("D:/Chicken/Rdata/FineMapping")
+F10genotypes <- read.table("RawData/F10_Genotypes.txt", header=TRUE, sep="\t")
+F10BodyWeight <- read.table("RawData/F10_BodyWeight_Phenotypes.txt", header=TRUE, sep="\t")
 F11genotypes <- read.table("RawData/F11_Genotypes.txt", na.strings="-", header=TRUE, sep="\t")
 F11BodyWeight <- read.table("RawData/F11_BodyWeight_Phenotypes.txt", na.strings="",header=TRUE, sep="\t")
 F12Traits <- read.table("Analysis/F12_QTLdataWithBWG-Geno NA fill in.txt", na.strings=c("NA","?"),header=TRUE, sep="\t")
@@ -26,6 +28,21 @@ if(!file.exists("Analysis/F11LDGenotypes.txt")){
   }
 }
 
+F10SNPnames <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
+
+if(!file.exists("Analysis/F10LDGenotypes.txt")){
+  F10LDGenotypes <- F10genotypes[,c("ID.Nr",F10SNPnames)]
+  for (mrow in 1:nrow(F10LDGenotypes)){
+    onerow <- NULL
+    for (mcol in 2:ncol(F10LDGenotypes)){
+      alleleA <- strsplit(as.character(F10LDGenotypes[mrow,mcol]),"")[[1]][1]
+      alleleB <- strsplit(as.character(F10LDGenotypes[mrow,mcol]),"")[[1]][2]
+      onerow <- cbind(onerow, paste(alleleA,alleleB))
+    }
+  cat(c(as.character(F10LDGenotypes[mrow,"ID.Nr"]),onerow), "\n", file="Analysis/F10LDGenotypes.txt", append = TRUE)
+  }
+}
+
 ### 2-Add the bodyweight gain and the genotypes in the F11QTLdata
 
 F11BodyWeight <- cbind(F11BodyWeight, BWG05 = rep(NA, nrow(F11BodyWeight)),BWG510 = rep(NA, nrow(F11BodyWeight)),BWG1015 = rep(NA, nrow(F11BodyWeight)),BWG1520 = rep(NA, nrow(F11BodyWeight)))
@@ -37,6 +54,16 @@ for (x in 1:nrow(F11BodyWeight)){
 }
 
 F11QTLdata <- cbind(F11BodyWeight,F11genotypes[,F11SNPnames])
+
+F10BodyWeight <- cbind(F10BodyWeight, BWG05 = rep(NA, nrow(F10BodyWeight)),BWG510 = rep(NA, nrow(F10BodyWeight)),BWG1015 = rep(NA, nrow(F10BodyWeight)),BWG1520 = rep(NA, nrow(F10BodyWeight)))
+for (x in 1:nrow(F10BodyWeight)){
+  F10BodyWeight[x,"BWG05"]   <- F10BodyWeight[x,"Gew_5Wo"] - F10BodyWeight[x,"Gew_1d"]
+  F10BodyWeight[x,"BWG510"]  <- F10BodyWeight[x,"Gew_10Wo"] - F10BodyWeight[x,"Gew_5Wo"]
+  F10BodyWeight[x,"BWG1015"] <- F10BodyWeight[x,"Gew_15Wo"] - F10BodyWeight[x,"Gew_10Wo"]
+  F10BodyWeight[x,"BWG1520"] <- F10BodyWeight[x,"Gew_20Wo"] - F10BodyWeight[x,"Gew_15Wo"]
+}
+
+F10QTLdata <- cbind(F10BodyWeight,F10genotypes[,F10SNPnames])
 
 ### 3-Select the normal diet and individuals with the BodyWeight data of every 5 weeks, should be 46 chickens
 F12QTLdata <- F12Traits[,c(names(F11BodyWeight),F11SNPnames)]
@@ -76,7 +103,7 @@ SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "
 #pdf("Analysis/AllSnpsPlot.pdf")
 #par(mfrow=c(3,3))
 #for(x in 1:9){
-  #plot(x=c(0,10), y=c(0,6), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTPvalue)[x])
+  #plot(x=c(0,10), y=c(0,10), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTPvalue)[x])
   #points(-log10(GTPvalue[[x]][,4]),t="l")
   #abline(h=-log10(0.05/(9*9)), lty=2)    # Threshold = -log10(0.05/(9*9))
   #axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
@@ -322,7 +349,7 @@ realData <- mapQTLs(genotypes, phenotypes, covariates)
 
 
 # Permutation for getting an overall 95 % confidence interval (corrected for N markers and N phenotypes
-if(!file.exists("Analysis/LODmaxesPermutation-1000.txt")){
+if(!file.exists("Analysis/Permutation-1000-withF10.txt")){
   maxes <- NULL
   for(p in 1:1000){
      ngenotypes <- genotypes[sample(nrow(genotypes)), ]
@@ -330,10 +357,10 @@ if(!file.exists("Analysis/LODmaxesPermutation-1000.txt")){
      maxes <- c(maxes, max(res))
      #cat("Finished permutation", p,"\n")
   }
-     write.table(maxes,"Analysis/LODmaxesPermutation-1000.txt",sep="\t")
+     write.table(maxes,"Analysis/Permutation-1000-withF10.txt",sep="\t")
   }else{                                                                                                        # Or load them from Disk if we already have them
   cat("Loading Permutation information from disk\n")
-  maxes <- read.table("Analysis/LODmaxesPermutation-1000.txt",sep="\t", header=TRUE)
+  maxes <- read.table("Analysis/Permutation-1000-withF10.txt",sep="\t", header=TRUE)
 }
 
 # Null-distribution
@@ -342,11 +369,11 @@ hist(maxes[,1])
 # Cut-off for significance 95 %
 Threshold <- sort(maxes[,1])[1000 * 0.95]       #<- Threshold = 3.179255
 
-pdf("Analysis/AllSnpsPlot-1000perputation.pdf")
+pdf("Analysis/AllSnpsPlot-1000perputation-withF10.pdf")
 par(mfrow=c(3,3))
 for(x in 1:9){
   plot(x=c(0,10), y=c(0,6), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTPvalue)[x])
-  points(GTPvalue[[x]][,4],t="l")
+  points((-log10(GTPvalue[[x]][,4]),t="l")
   abline(h=Threshold, lty=2)    
   axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
 }

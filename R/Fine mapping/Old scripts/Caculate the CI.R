@@ -52,23 +52,24 @@ mapQTLs <- function(genotypes, phenotypes, covariates){
 LodForAll <- mapQTLs(genotypes, phenotypes, covariates)
 
 ## Confidence Interval
-if(!file.exists("Analysis/CIboots10000.txt")){
+if(!file.exists("Analysis/CIboots1000-withF10.txt")){
   boots <- NULL
-  for(x in 1:10000){
+  for(x in 1:1000){
     idx <- sample(nrow(genotypes), 97, replace=TRUE)
     boots <- rbind(boots, mapQTLs(genotypes[idx, ], phenotypes[idx,], covariates[idx,]))
   }
-    write.table(boots,"Analysis/CIboots10000.txt",sep="\t")
+    boots <- cbind(Traits = rownames(boots), boots)
+    write.table(boots,"Analysis/CIboots1000-withF10.txt",sep="\t")
   }else{                                                                                                        # Or load them from Disk if we already have them
   cat("Loading boots information from disk\n")
-  boots <- read.table("Analysis/CIboots10000.txt",sep="\t", header=TRUE, row.names=NULL)
+  boots <- read.table("Analysis/CIboots1000-withF10.txt",sep="\t", header=TRUE, row.names=FALSE)
 }
 
 CIAll <- NULL
 for (trait in names(phenotypes)){
-  TraitBoots <- boots[which(boots[,"row.names"] == trait),]
+  TraitBoots <- boots[which(rownames(boots) == trait),]
   topM <- names(which.max(LodForAll[trait,]))
-  BootI <- sort(TraitBoots[,topM])[10000 * 0.025]
+  BootI <- sort(TraitBoots[,topM])[1000 * 0.025]
   CIAll <- cbind(CIAll, BootI)
 }
 colnames(CIAll) <- names(phenotypes)
