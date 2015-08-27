@@ -1,4 +1,4 @@
-# Correct the selected slaughter traits data for the chicken (All 3 Generations)
+# Calculate the additive and dominance effect of the top marker for the selected slaughter traits
 # copyright (c) 2014-2020 - Brockmann group - HU Berlin, Danny Arends & Shijie Lyu
 # last modified July, 2015
 # first written July, 2015
@@ -54,64 +54,55 @@ for (Phenotype in sst){
   AllCorPheno[[Phenotype]] <- corPheno
 }
 
-### Plot for carcass weight and TotalFat
-CWID <- which(!is.na(SlaughterTraits[,"BW.bratfertig."]))
-CWGeno <- as.character(genotypes[CWID,"rs14490774"])
-NCWGeno <- factor(CWGeno, levels=levels(CWGeno)<-c("TT","CT","CC")) 
-CW <- AllCorPheno[["BW.bratfertig."]]
-CWdf <- data.frame(as.numeric(CW),as.character(CWGeno))
-lm(CWdf[,1]~as.numeric(CWdf[,2]))
-colnames(CWdf) <- c("CorrectedCW","Geno")
+### The additive effects(AE) calculation for the Top SNP per traits
+GetAE <- function(Trait, TopSNP){
+  SNPsinfo <- read.table("RawData/SNPsinfo.txt",header=TRUE,sep="\t")
+  NHI.Allele <- as.character(SNPsinfo[which(SNPsinfo[,"Markers"]==TopSNP),]["NHI.Allele"][,1])
+  WL77.Allele <- as.character(SNPsinfo[which(SNPsinfo[,"Markers"]==TopSNP),]["WL77.Allele"][,1])
 
-TFID <- which(!is.na(SlaughterTraits[,"TotalFat"]))
-TFGeno <- as.character(genotypes[TFID,"rs14490774"])
-NTFGeno <- factor(TFGeno, levels=levels(TFGeno)<-c("TT","CT","CC")) 
-TF <- AllCorPheno[["TotalFat"]]
-TFdf <- data.frame(as.numeric(TF),as.character(TFGeno))  # wilcox.test, shapiro.test
-colnames(TFdf) <- c("CorrectedTF","Geno")
+  Pheno <- AllCorPheno[[Trait]]
+  Geno <- as.character(genotypes[which(!is.na(SlaughterTraits[,Trait])),TopSNP])
 
-LNSBID <- which(!is.na(SlaughterTraits[,"LegnoSkin_bone"]))
-LNSBGeno <- as.character(genotypes[LNSBID,"rs14490774"])
-NLNSBGeno <- factor(LNSBGeno, levels=levels(LNSBGeno)<-c("TT","CT","CC")) 
-LNSB <- AllCorPheno[["LegnoSkin_bone"]]
-LNSBdf <- data.frame(as.numeric(LNSB),as.character(LNSBGeno))  # wilcox.test, shapiro.test
-colnames(LNSBdf) <- c("CorrectedLNSB","Geno")
+  Geno[which(Geno == paste0(WL77.Allele,WL77.Allele))] <- 0
+  Geno[c(which(Geno == paste0(NHI.Allele,WL77.Allele)),which(Geno == paste0(WL77.Allele,NHI.Allele)))] <- 1
+  Geno[which(Geno == paste0(NHI.Allele,NHI.Allele))] <- 2
 
-BNSID <- which(!is.na(SlaughterTraits[,"BreastnoSkin"]))
-BNSGeno <- as.character(genotypes[BNSID,"rs14490774"])
-NBNSGeno <- factor(BNSGeno, levels=levels(BNSGeno)<-c("TT","CT","CC")) 
-BNS <- AllCorPheno[["BreastnoSkin"]]
-BNSdf <- data.frame(as.numeric(BNS),as.character(BNSGeno))  # wilcox.test, shapiro.test
-colnames(BNSdf) <- c("CorrectedBNS","Geno")
+  model <- lm(as.numeric(Pheno) ~ as.numeric(Geno))
+  B <- summary(model)$coefficients["as.numeric(Geno)","Estimate"]
+  SE <- summary(model)$coefficients["as.numeric(Geno)","Std. Error"]
+  Pvalue <- summary(model)$coefficients["as.numeric(Geno)","Pr(>|t|)"]
+  result <- cbind(B=B,SE=SE,Pvalue=Pvalue)
+  rownames(result) <- paste0("AE:", TopSNP, "-vs-", Trait)
+  return(result)
+}
 
-Trans <- function(CWdf){
-  Geno <- as.character(CWdf[,2])
-  Geno[which(Geno == "TT")] <- 1
-  Geno[which(Geno == "CT")] <- 2
-  Geno[which(Geno == "CC")] <- 3
-  return(as.numeric(Geno))
-  }
+### The dominance effects(DE) calculation for the Top SNP per traits
 
+GetDE <- function(Trait, TopSNP){
+  SNPsinfo <- read.table("RawData/SNPsinfo.txt",header=TRUE,sep="\t")
+  NHI.Allele <- as.character(SNPsinfo[which(SNPsinfo[,"Markers"]==TopSNP),]["NHI.Allele"][,1])
+  WL77.Allele <- as.character(SNPsinfo[which(SNPsinfo[,"Markers"]==TopSNP),]["WL77.Allele"][,1])
 
-tiff("Analysis/4 traits phenotypes.tif", res = 300,width = 2400, height = 2400, compression = "lzw")
-par(mfrow=c(2,2))
-boxplot(CW~NCWGeno, ylab= "CW (g)", xlab = "Genotypes", sub = "rs14490774", cex.lab=1.3) #text(c(1,2,3),1390, c("n=41","n=13", "n=2"), cex= 0.5) 
-abline(lm(CWdf[,1]~Trans(CWdf)),col="red")
-legend("bottomright", legend = paste0("P = ",signif(summary(lm(CWdf[,1]~Trans(CWdf)))$coefficients[2,4],3)),bty = "n")
+  Pheno <- AllCorPheno[[Trait]]
+  Geno <- as.character(genotypes[which(!is.na(SlaughterTraits[,Trait])),TopSNP])
+  
+  Geno[which(Geno == paste0(WL77.Allele,WL77.Allele))] <- 0
+  Geno[c(which(Geno == paste0(NHI.Allele,WL77.Allele)),which(Geno == paste0(WL77.Allele,NHI.Allele)))] <- 1
+  Geno[which(Geno == paste0(NHI.Allele,NHI.Allele))] <- 0
 
-boxplot(LNSB~NLNSBGeno, ylab= "LNSB (g)", xlab = "Genotypes", sub = "rs14490774", cex.lab=1.3)
-abline(lm(LNSBdf[,1]~Trans(LNSBdf)),col="red")
-legend("bottomright", legend = paste0("P = ",signif(summary(lm(LNSBdf[,1]~Trans(LNSBdf)))$coefficients[2,4],3)),bty = "n")
-
-boxplot(BNS~NBNSGeno, ylab= "BNS (g)", xlab = "Genotypes", sub = "rs14490774", cex.lab=1.3)
-abline(lm(BNSdf[,1]~Trans(BNSdf)),col="red")
-legend("bottomright", legend = paste0("P = ",signif(summary(lm(BNSdf[,1]~Trans(BNSdf)))$coefficients[2,4],3)),bty = "n")
-
-boxplot(TF~NTFGeno, ylab= "WAT (g)", xlab = "Genotypes", sub = "rs14490774", cex.lab=1.3)
-abline(lm(TFdf[,1]~Trans(TFdf)),col="red")
-legend("bottomright", legend = paste0("P = ",signif(summary(lm(TFdf[,1]~Trans(TFdf)))$coefficients[2,4],3)),bty = "n")
-dev.off()
+  model <- lm(as.numeric(Pheno) ~ as.numeric(Geno))
+  B <- summary(model)$coefficients["as.numeric(Geno)","Estimate"]
+  SE <- summary(model)$coefficients["as.numeric(Geno)","Std. Error"]
+  Pvalue <- summary(model)$coefficients["as.numeric(Geno)","Pr(>|t|)"]
+  result <- cbind(B=B,SE=SE,Pvalue=Pvalue)
+  rownames(result) <- paste0("DE:",TopSNP, "-vs-", Trait)
+  return(result)
+}
 
 
+Trait <- "BW.bratfertig."
+TopSNP <- "rs14490774"
 
+GetAE(Trait,TopSNP)
+GetDE(Trait,TopSNP)
 

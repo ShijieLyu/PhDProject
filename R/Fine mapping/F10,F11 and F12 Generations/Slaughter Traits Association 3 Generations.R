@@ -27,6 +27,7 @@ SlaughterTraits[,"BreastSkin"] <- SlaughterTraits[,"Brust.Haut.re."] + Slaughter
 SlaughterTraits[,"VisceralFat"] <- SlaughterTraits[,"Fett.Herz."]+SlaughterTraits[,"Fett.Magen."] + SlaughterTraits[,"Fett.Leber."] + SlaughterTraits[,"Fett.Milz."] + SlaughterTraits[,"Abdominalfett"]
 SlaughterTraits[,"TotalFat"] <- SlaughterTraits[,"Fett.Herz."]+SlaughterTraits[,"Fett.Magen."] + SlaughterTraits[,"Fett.Leber."] + SlaughterTraits[,"Fett.Milz."] + SlaughterTraits[,"Abdominalfett"] + SlaughterTraits[,"Hals.Fett"]
 
+#write.table(SlaughterTraits,"Analysis/SlaughterTraits-All generation.txt",sep="\t",row.names = FALSE,quote = FALSE)
 
 # Organised the genotypes
 SelectColumn <- c("ID.Nr","rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
@@ -35,6 +36,23 @@ genotypes <- rbind(F10genotypes[,SelectColumn],F11genotypes[,SelectColumn],F12ge
 # Association Analysis
 AllSTName <- names(SlaughterTraits)[-c(45,54,71,82,96,109)]  # Remove the "ID.Nr" column
 AllSTName <- AllSTName[c(11:115,118:124)]                    # Select the phenotype traits
+
+SNPvarPerc <- function(mF){
+  X <- getME(mF,"X")
+  TotalFixed <- 0
+  for (x in 2:length(fixef(mF))){  
+    TotalFixed <- TotalFixed + (fixef(mF)[x] * X[, x])  
+  }
+  SNPFixed <- 0
+  for (x in grep("OneSNP", names(fixef(mF)))){     
+    SNPFixed <- SNPFixed + (fixef(mF)[x] * X[, x])
+  }
+  FixedTotalVar <- var(TotalFixed)
+  FixedSNPVar <- var(SNPFixed)
+  TotalVar <- FixedTotalVar + sum(data.frame(VarCorr(mF))[,4])
+  Perc <- round(FixedSNPVar/TotalVar,3)*100
+  return(Perc)
+}
 
 library(lme4)
 Traits  <- AllSTName
@@ -54,7 +72,7 @@ for (Phenotype in Traits){
     model.full <- lmer((as.numeric(SlaughterTraits[,Phenotype])[idx]) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])) + (as.character(genotypes[,OneSNP])[idx]), REML=FALSE) # qqnorm(resid(model.full)) 
     model.null <- lmer((as.numeric(SlaughterTraits[,Phenotype])[idx]) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])), REML=FALSE)
     res <- anova(model.null,model.full)
-    SNPvar <- round(anova(model.full)[2,2]/(sum(anova(model.full)[,2])+sum(data.frame(VarCorr(model.full))[,4])),3)*100
+    SNPvar <- SNPvarPerc(model.full)
     EachTraitLod <- rbind(EachTraitLod, c(-log10(res[[8]]),SNPvar))
     colnames(EachTraitLod) <- c("Residuals","SNP","SNPvar")
   }
@@ -109,16 +127,51 @@ for(x in 1:10){
   points(x= SNPsinfo[,"Location"], y=GTlodsst[[x]][,2],t="l",col=rainbow(10)[x], lwd=1.8)
 }
 abline(h = Threshold , lty=2, lwd=1.9)
-abline(h = SigThreshold , lty=2, lwd=1.9)
-text(x=SNPsinfo[1,3]+600000,y=Threshold+0.25, labels = "5% threshold")
-text(x=SNPsinfo[1,3]+600000,y=SigThreshold+0.25, labels = "1% threshold")
+abline(h = SigThreshold , lty=1, lwd=1.9)
+#text(x=SNPsinfo[1,3]+600000,y=Threshold+0.25, labels = "5% threshold")
+#text(x=SNPsinfo[1,3]+600000,y=SigThreshold+0.25, labels = "1% threshold")
 axis(1, at=seq(69000000,78000000,1000000), c("69","70","71","72","73","74","75","76","77","78"), las=1)
 
 points(x=SNPsinfo[,3], y = rep(-0.3,length(SNPsinfo[,3])), pch=17)
 #axis(1, at=SNPsinfo[,3], SNPsinfo[,"Markers"], cex.axis=0.4,las=2)
 
 legend(69250000,-2.8, c("CW","HW","NW","WW","LNS"),lty=1,col=(rainbow(10)[1:5]),horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
-legend(68800000,-3.5, c("LNSB","BNS","SNAT","VAT","TAT"),lty=1,col=(rainbow(10)[6:10]),horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
+legend(68100000,-3.5, c("LNSB","BNS","SubcAT","ViscAT","WAT"),lty=1,col=(rainbow(10)[6:10]),horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
 dev.off()
 
+### Estimate the position of the CI
 
+CIAll <- NULL
+TopMarkers <- NULL 
+for (x in 1:length(GTLod)){
+  TopMarkers <- cbind(TopMarkers ,names(which.max(GTLod[[x]][,2])))
+  CIAll <- cbind(CIAll, max(GTLod[[x]][,2])-1.5)
+}
+colnames(TopMarkers) <- names(GTLod)
+colnames(CIAll) <- names(GTLod)
+
+SNPsinfo <- read.table("RawData/SNPsinfo.txt",header=TRUE,sep="\t")
+SNPPosition <- SNPsinfo[, c("Markers","Location")]
+rownames(SNPPosition) <- SNPPosition[,"Markers"]
+
+CIPosCal <- function(SNP1, SNP2, Trait){
+  y1 <- as.numeric(GTLod[[Trait]][SNP1,2]) 
+  y2 <- as.numeric(GTLod[[Trait]][SNP2,2]) 
+  x1 <- as.numeric(SNPPosition[SNP1, "Location"])
+  x2 <- as.numeric(SNPPosition[SNP2, "Location"])
+  a <- as.numeric((y1-y2)/(x1-x2))
+  b <- y1-a*(x1)
+  CIPos <- (CIAll[,Trait] -b)/a
+  return(CIPos)
+}
+
+CIPosCal("rs318175270", "rs14492508","BreastnoSkin")
+
+par(mfrow=c(3,4))
+for(x in 1:10){
+  plot(x=c(0,10), y=c(0,10), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTlodsst)[x])
+  points(GTlodsst[[x]][,2],t="l")
+  abline(h = -log10(0.05/(length(sst)*length(SNPsForAnalysis))) , lty=1)
+  abline(h = CIAll[,sst][x], lty=2)  
+  axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
+}

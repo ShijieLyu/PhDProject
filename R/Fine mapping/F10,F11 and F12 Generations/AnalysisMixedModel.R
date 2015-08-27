@@ -6,6 +6,24 @@
 setwd("D:/Chicken/Rdata/FineMapping")
 QTLdataAll <- read.table("Analysis/QTLdataAll.txt", sep = "\t",header=TRUE, colClasses=c(rep("character",1), rep("factor",9),rep("numeric",9), rep("character", 9), rep("factor",6)))
 
+# The function for calculating the 
+SNPvarPerc <- function(mF){
+  X <- getME(mF,"X")                                               # Get the fixed-effects model matrix
+  TotalFixed <- 0
+  for (x in 2:length(fixef(mF))){  
+    TotalFixed <- TotalFixed + (fixef(mF)[x] * X[, x])  
+  }
+  SNPFixed <- 0
+  for (x in grep("OneSNP", names(fixef(mF)))){     
+    SNPFixed <- SNPFixed + (fixef(mF)[x] * X[, x])
+  }
+  FixedTotalVar <- var(TotalFixed)                                 # Get the total fixed effects variance 
+  FixedSNPVar <- var(SNPFixed)                                     # Get the specific fixed effect variance
+  TotalVar <- FixedTotalVar + sum(data.frame(VarCorr(mF))[,4])     # Calculate the total variance with fixed and random
+  Perc <- round(FixedSNPVar/TotalVar,3)*100
+  return(Perc)
+}
+
 ### Association Analysis using the mixed linear model
 library(lme4)
 GrowthTraits  <- c("Gew_1d","Gew_5Wo","Gew_10Wo","Gew_15Wo","Gew_20Wo","BWG05","BWG510","BWG1015","BWG1520")
@@ -19,8 +37,8 @@ for (Phenotype in GrowthTraits){                                                
     model.full <- lmer(QTLdataAll[,Phenotype] ~ QTLdataAll[,"Batch"] + (1|QTLdataAll[,"Parents"]) + QTLdataAll[,OneSNP], REML=FALSE)  
     model.null <- lmer(QTLdataAll[,Phenotype] ~ QTLdataAll[,"Batch"] + (1|QTLdataAll[,"Parents"]), REML=FALSE)
     res <- anova(model.null,model.full)
-    SNPvar <- round(anova(model.full)[2,2]/(sum(anova(model.full)[,2])+sum(data.frame(VarCorr(model.full))[,4])),3)*100
-    EachTraitLod <- rbind(EachTraitLod, c(-log10(res[[8]]),SNPvar))
+    SNPvar <- SNPvarPerc(model.full)
+    EachTraitLod <- rbind(EachTraitLod, c(-log10(res[[8]]), SNPvar))
     colnames(EachTraitLod) <- c("Residuals","SNP","SNPvar")
     #jpeg(paste("Analysis/ModelCheckPlot/", paste0(Phenotype,"-",OneSNP), ".jpg", sep=""))
     #par(mfrow=c(2,1))
@@ -62,16 +80,17 @@ dev.off()
 ### Final Pic.
 SNPsinfo <- read.table("RawData/SNPsinfo.txt",header=TRUE,sep="\t")
 
-pdf("Analysis/MLMPlot-AllinOne.pdf")
+tiff("Analysis/MLMPlot-AllinOne-growth traits.tif", res = 300,width = 2100, height = 2000, compression = "lzw")
+#pdf("Analysis/MLMPlot-AllinOne.pdf")
 par(mai = c(2.2, 1, 1, 1))
 plot(x=c(as.numeric(SNPsinfo[1,3]-100000),as.numeric(SNPsinfo[9,3]+100000)), y=c(0,10), t="n", ylab="LOD Score", xlab="Physical Position (Mb)", xaxt="n")
 for(x in 1:9){
   points(x= SNPsinfo[,"Location"], y=GTLod[[x]][,2],t="l",col=rainbow(9)[x], lwd=1.8)
 }
 abline(h = Threshold , lty=2, lwd=1.9)
-abline(h = SigThreshold , lty=2, lwd=1.9)
-text(x=SNPsinfo[1,3]+600000,y=Threshold+0.25, labels = "5% threshold")
-text(x=SNPsinfo[1,3]+600000,y=SigThreshold+0.25, labels = "1% threshold")
+abline(h = SigThreshold , lty=1, lwd=1.9)
+#text(x=SNPsinfo[1,3]+600000,y=Threshold+0.25, labels = "5% threshold")
+#text(x=SNPsinfo[1,3]+600000,y=SigThreshold+0.25, labels = "1% threshold")
 axis(1, at=seq(69000000,78000000,1000000), c("69","70","71","72","73","74","75","76","77","78"), las=1)
 
 points(x=SNPsinfo[,3], y = rep(-0.3,length(SNPsinfo[,3])), pch=17)
