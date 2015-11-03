@@ -31,23 +31,24 @@ SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "
 
 GTLod <- vector("list", length(GrowthTraits)) 
 names(GTLod) <- GrowthTraits
-for (Phenotype in GrowthTraits){                                                       # Model after selection
+for (Phenotype in GrowthTraits){                                                     
   EachTraitLod <- NULL
+  if(length(which(!is.na(QTLdataAll[,Phenotype]))) == 0){
+        EachTraitLod <- rbind(EachTraitLod, NA)
+        colnames(EachTraitLod) <- "SNP"
+  }else{
   for (OneSNP in SNPsForAnalysis){
-    model.full <- lmer(QTLdataAll[,Phenotype] ~ QTLdataAll[,"Batch"] + (1|QTLdataAll[,"Parents"]) + QTLdataAll[,OneSNP], REML=FALSE)  
-    model.null <- lmer(QTLdataAll[,Phenotype] ~ QTLdataAll[,"Batch"] + (1|QTLdataAll[,"Parents"]), REML=FALSE)
+    idx <- which(!is.na(QTLdataAll[,Phenotype]))
+    model.full <- lmer(QTLdataAll[,Phenotype][idx] ~ QTLdataAll[,"Batch"][idx] + (1|QTLdataAll[,"Parents"][idx]) + QTLdataAll[,OneSNP][idx], REML=FALSE) # qqnorm(resid(model.full)) 
+    model.null <- lmer(QTLdataAll[,Phenotype][idx] ~ QTLdataAll[,"Batch"][idx] + (1|QTLdataAll[,"Parents"][idx]), REML=FALSE)
     res <- anova(model.null,model.full)
     SNPvar <- SNPvarPerc(model.full)
-    EachTraitLod <- rbind(EachTraitLod, c(-log10(res[[8]]), SNPvar))
+    EachTraitLod <- rbind(EachTraitLod, c(-log10(res[[8]]),SNPvar))
     colnames(EachTraitLod) <- c("Residuals","SNP","SNPvar")
-    #jpeg(paste("Analysis/ModelCheckPlot/", paste0(Phenotype,"-",OneSNP), ".jpg", sep=""))
-    #par(mfrow=c(2,1))
-    #hist(resid(model.full), main= paste0(Phenotype,"--", OneSNP), cex.main=0.7)    
-    #qqnorm(resid(model.full), main= paste0(Phenotype,"--", OneSNP),cex.main=0.7)
-    #dev.off()    
   }
   rownames(EachTraitLod) <- SNPsForAnalysis
   GTLod[[Phenotype]] <- EachTraitLod
+  }
 }
 GTLod$Gew_15Wo
 
