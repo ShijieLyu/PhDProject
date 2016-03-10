@@ -32,10 +32,21 @@ for (x in 1:nrow(FDM)){
   FDM[x,"LMBFT"]  <- mean(c((toN(FDM[x,"Leg.HomoB.Trans1.fat."])*0.01*FDM[x,"Keule.MusB.1"])/FDM[x,"Keule.MusB"],(toN(FDM[x,"Leg.HomoB.Trans2.fat."])*0.01*FDM[x,"Keule.MusB.2"])/FDM[x,"Keule.MusB"],(toN(FDM[x,"Leg.HomoB.Trans3.fat."])*0.01*FDM[x,"Keule.MusB.3"])/FDM[x,"Keule.MusB"]),na.rm = TRUE)        # LMBF = leg lower part fat     
 }
 
-F12SD <- cbind(F12SD, BF = rep(NA, nrow(F12SD)), LF = rep(NA, nrow(F12SD)))
+F12SD <- cbind(F12SD, NeckFat = rep(NA, nrow(F12SD)), VisceralFat = rep(NA, nrow(F12SD)), TotalFat = rep(NA, nrow(F12SD)),
+               NeckFatPerc = rep(NA, nrow(F12SD)), VisceralFatPerc = rep(NA, nrow(F12SD)),TotalFatPerc = rep(NA, nrow(F12SD)))
+
+F12SD[,"NeckFat"] <- F12SD[,"Hals.Fett"]
+F12SD[,"VisceralFat"] <- F12SD[,"Fett.Herz"]+F12SD[,"Fett.Magen"] + F12SD[,"Fett.Leber"] + F12SD[,"Fett.Milz"] + F12SD[,"Abdominalfett"]
+F12SD[,"TotalFat"] <- F12SD[,"Fett.Herz"]+F12SD[,"Fett.Magen"] + F12SD[,"Fett.Leber"] + F12SD[,"Fett.Milz"] + F12SD[,"Abdominalfett"] + F12SD[,"Hals.Fett"]
+F12SD[,"NeckFatPerc"] <- F12SD[,"NeckFat"]/F12SD[,"BW.nuchtern"]
+F12SD[,"VisceralFatPerc"] <- F12SD[,"VisceralFat"]/F12SD[,"BW.nuchtern"]
+F12SD[,"TotalFatPerc"] <- F12SD[,"TotalFat"]/F12SD[,"BW.nuchtern"]
+
+
+F12SD <- cbind(F12SD, MRIBFPerc = rep(NA, nrow(F12SD)), MRILFPerc = rep(NA, nrow(F12SD)))
 for (x in 1:nrow(F12SD)){
-  F12SD[x,"BF"] <- mean(c(F12SD[x,"MRI.Brust.Fett"]/F12SD[x,"Gewicht.Teilstuck_Brust_fur_Messung"], F12SD[x,"MRI.Brust.Fett.1"]/F12SD[x,"Gewicht.Teilstuck_Brust_fur_Messung"]),na.rm=TRUE)   # BF=Breast Fat 
-  F12SD[x,"LF"] <- mean(c(F12SD[x,"MRI.Keule_ohne_Knochen.Fett"]/F12SD[x,"Gewicht.Teilstuck.Keule_ohne_Knochen_f._Messung"], F12SD[x,"MRI.Keule_ohne_Knochen.Fett.1"]/F12SD[x,"Gewicht.Teilstuck.Keule_ohne_Knochen_f._Messung"]),na.rm=TRUE)   # LF= Leg Fat  
+  F12SD[x,"MRIBFPerc"] <- mean(c(F12SD[x,"MRI.Brust.Fett"]/F12SD[x,"Gewicht.Teilstuck_Brust_fur_Messung"], F12SD[x,"MRI.Brust.Fett.1"]/F12SD[x,"Gewicht.Teilstuck_Brust_fur_Messung"]),na.rm=TRUE)   # BF=Breast Fat 
+  F12SD[x,"MRILFPerc"] <- mean(c(F12SD[x,"MRI.Keule_ohne_Knochen.Fett"]/F12SD[x,"Gewicht.Teilstuck.Keule_ohne_Knochen_f._Messung"], F12SD[x,"MRI.Keule_ohne_Knochen.Fett.1"]/F12SD[x,"Gewicht.Teilstuck.Keule_ohne_Knochen_f._Messung"]),na.rm=TRUE)   # LF= Leg Fat  
 }
 
 FDMF12 <- FDM[which(FDM[,"Gene.ration"] == "F12"),]                     # Select the F12 generation
@@ -43,10 +54,13 @@ F12SD <- F12SD[match(FDMF12[,"Tier.Nr."],F12SD[,"ID.Nr"]),]             # filter
 F12SDN <- F12SD[which(!is.na(F12SD[,"ID.Nr"])),]                        # remove the NA, which can not match in the two groups
 FDMF12N <- FDMF12[which(FDMF12[,"Tier.Nr."] %in% F12SDN[,"ID.Nr"]),]     # make the two group have the same individuals
 
-# Correlation analysis
+CEMTraits <- FDMF12N[,c("BMFOT","BTFOT","BMAFOT","BMBFOT","LUpFOT","LLoFOT","LMAFOT","LMBFOT")]
+MRITraits <- F12SDN[,c("MRIBFPerc","MRILFPerc")]
+FatTraits <- F12SDN[,c("NeckFat","VisceralFat","TotalFat","NeckFatPerc","VisceralFatPerc","TotalFatPerc")]
 
-TraitsMatrix <- cbind(FDMF12N[,86:ncol(FDMF12N)],F12SDN[,124:125])
-Cormatrix <- cor(TraitsMatrix,method="pearson",use = "pairwise")
+TraitsMatrix <- cbind(CEMTraits,MRITraits,FatTraits)
+Cormatrix <- cor(TraitsMatrix,method="spearman",use = "pairwise")
+write.table(Cormatrix, file = "Analysis/correlation coefficient for CEM,MRI and Fat traits.txt", sep = "\t")
 
 PAT <- NULL                                                             # Pvalue all traits
 for (x in 1:ncol(TraitsMatrix)){
