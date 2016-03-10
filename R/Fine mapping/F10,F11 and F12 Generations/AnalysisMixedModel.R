@@ -39,7 +39,7 @@ for (Phenotype in GrowthTraits){
   }else{
   for (OneSNP in SNPsForAnalysis){
     idx <- which(!is.na(QTLdataAll[,Phenotype]))
-    model.full <- lmer(QTLdataAll[,Phenotype][idx] ~ QTLdataAll[,"Batch"][idx] + (1|QTLdataAll[,"Parents"][idx]) + QTLdataAll[,OneSNP][idx], REML=FALSE) # qqnorm(resid(model.full)) 
+    model.full <- lmer(QTLdataAll[,Phenotype][idx] ~ QTLdataAll[,"Batch"][idx] + (1|QTLdataAll[,"Parents"][idx]) + QTLdataAll[,OneSNP][idx], REML=FALSE) # plot(fitted(model.full),residuals(model.full)) qqnorm(resid(model.full)) 
     model.null <- lmer(QTLdataAll[,Phenotype][idx] ~ QTLdataAll[,"Batch"][idx] + (1|QTLdataAll[,"Parents"][idx]), REML=FALSE)
     res <- anova(model.null,model.full)
     SNPvar <- SNPvarPerc(model.full)
@@ -53,8 +53,8 @@ for (Phenotype in GrowthTraits){
 GTLod$Gew_15Wo
 
 ### Threshold under bonferroni correction
-Threshold <- -log10(0.05/(length(GrowthTraits)*length(SNPsForAnalysis)))
-SigThreshold <- -log10(0.01/(length(GrowthTraits)*length(SNPsForAnalysis)))
+Threshold <- -log10(0.05/((length(GrowthTraits)+10)*(length(SNPsForAnalysis)-2)))
+SigThreshold <- -log10(0.01/((length(GrowthTraits)+10)*(length(SNPsForAnalysis)-2)))
 
 ### Confidence Interval calculation -- Drop down 1.5-LOD of the Top marker 
 CIAll <- NULL
@@ -72,7 +72,8 @@ par(mfrow=c(3,3))
 for(x in 1:9){
   plot(x=c(0,10), y=c(0,10), t="n", ylab="LOD Score", xlab="", xaxt="n", main=names(GTLod)[x])
   points(GTLod[[x]][,2],t="l")
-  abline(h = Threshold , lty=1)
+  abline(h = Threshold , lty=1, col="blue")
+  abline(h = SigThreshold , lty=1, col="red")
   abline(h = CIAll[,x], lty=2)  
   axis(1, at=1:9, SNPsForAnalysis, las=2, cex.axis = 0.77)
 }
@@ -85,8 +86,9 @@ tiff("Analysis/MLMPlot-AllinOne-growth traits.tif", res = 300,width = 2100, heig
 #pdf("Analysis/MLMPlot-AllinOne.pdf")
 par(mai = c(2.2, 1, 1, 1))
 plot(x=c(as.numeric(SNPsinfo[1,3]-100000),as.numeric(SNPsinfo[9,3]+100000)), y=c(0,10), t="n", ylab="LOD Score", xlab="Physical Position (Mb)", xaxt="n")
+curvecol <- c("darkgray","chartreuse","chartreuse4","cyan","blue","magenta","red","yellow1","darkgoldenrod","black") 
 for(x in 1:9){
-  points(x= SNPsinfo[,"Location"], y=GTLod[[x]][,2],t="l",col=rainbow(9)[x], lwd=1.8)
+  points(x= SNPsinfo[,"Location"], y=GTLod[[x]][,2],t="l",col=curvecol[x], lwd=1.8)
 }
 abline(h = Threshold , lty=2, lwd=1.9)
 abline(h = SigThreshold , lty=1, lwd=1.9)
@@ -97,8 +99,8 @@ axis(1, at=seq(69000000,78000000,1000000), c("69","70","71","72","73","74","75",
 points(x=SNPsinfo[,3], y = rep(-0.3,length(SNPsinfo[,3])), pch=17)
 #axis(1, at=SNPsinfo[,3], SNPsinfo[,"Markers"], cex.axis=0.4,las=2)
 
-legend(68500000,-2.8, c("BW0","BW5","BW10","BW15","BW20"),lty=1,col=(rainbow(9)[1:5]),horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
-legend(68300000,-3.5, c("BWG05","BWG510","BWG1015","BWG1520"),lty=1,col=(rainbow(9)[6:9]),horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
+legend(68500000,-2.8, c("BW0","BW5","BW10","BW15","BW20"),lty=1,col=curvecol[1:5],horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
+legend(68300000,-3.5, c("BWG05","BWG510","BWG1015","BWG1520"),lty=1,col=curvecol[6:9],horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
 dev.off()
 
 
