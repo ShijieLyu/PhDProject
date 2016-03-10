@@ -18,7 +18,7 @@ SlaughterTraits <- cbind(SlaughterTraits, BandP)
 
 SlaughterTraits <- cbind(SlaughterTraits, LegnoSkin = rep(NA, nrow(SlaughterTraits)), LegSkin = rep(NA, nrow(SlaughterTraits)), LegnoSkin_bone= rep(NA, nrow(SlaughterTraits)),
                          BreastnoSkin = rep(NA, nrow(SlaughterTraits)), BreastSkin = rep(NA, nrow(SlaughterTraits)), VisceralFat = rep(NA, nrow(SlaughterTraits)), TotalFat = rep(NA, nrow(SlaughterTraits)),
-                         TransNeckFat = rep(NA, nrow(SlaughterTraits)),TransVisceralFat = rep(NA, nrow(SlaughterTraits)),TransTotalFat = rep(NA, nrow(SlaughterTraits))
+                         TransNeckFat = rep(NA, nrow(SlaughterTraits)),TransVisceralFat = rep(NA, nrow(SlaughterTraits)),TransTotalFat = rep(NA, nrow(SlaughterTraits)),LegBonemass = rep(NA, nrow(SlaughterTraits))
                          )
 
 SlaughterTraits[,"LegnoSkin"] <- SlaughterTraits[,"Keule.re..ohne.Haut"] + SlaughterTraits[,"Keule.li..ohne.Haut"]
@@ -31,6 +31,7 @@ SlaughterTraits[,"TotalFat"] <- SlaughterTraits[,"Fett.Herz."]+SlaughterTraits[,
 SlaughterTraits[,"TransNeckFat"] <- (SlaughterTraits[,"Hals.Fett"])^0.5
 SlaughterTraits[,"TransVisceralFat"] <- (SlaughterTraits[,"VisceralFat"])^0.5
 SlaughterTraits[,"TransTotalFat"] <- (SlaughterTraits[,"TotalFat"])^0.5
+SlaughterTraits[,"LegBonemass"] <- SlaughterTraits[,"LegnoSkin"] - SlaughterTraits[,"LegnoSkin_bone"]
 
 write.table(SlaughterTraits,"Analysis/SlaughterTraits-All generation.txt",sep="\t",row.names = FALSE,quote = FALSE)
 
@@ -40,7 +41,7 @@ genotypes <- rbind(F10genotypes[,SelectColumn],F11genotypes[,SelectColumn],F12ge
 
 # Association Analysis
 AllSTName <- names(SlaughterTraits)[-c(45,54,71,82,96,109)]  # Remove the "ID.Nr" column
-AllSTName <- AllSTName[c(11:115,118:127)]                    # Select the phenotype traits
+AllSTName <- AllSTName[c(11:115,118:128)]                    # Select the phenotype traits
 
 SNPvarPerc <- function(mF){
   X <- getME(mF,"X")
@@ -88,10 +89,10 @@ for (Phenotype in Traits){
 }
 
 #######################################################################################################
-## Body weight as the covariate 
+## Body weight as the covariate or not
 
 library(lme4)
-sst <- c("BW.bratfertig.","Kopf","Hals","Flugel","LegnoSkin","LegnoSkin_bone","BreastnoSkin","Hals.Fett","VisceralFat","TotalFat")
+sst <- c("BW.bratfertig.","Kopf","Hals","Flugel","LegnoSkin","LegnoSkin_bone","BreastnoSkin","Hals.Fett","VisceralFat","TotalFat","Abdominalfett","LegBonemass")
 Traits  <- sst
 SNPsForAnalysis <- c("rs10725580", "rs315966269", "rs313283321", "rs16435551", "rs14490774", "rs314961352", "rs318175270", "rs14492508","rs312839183")
 
@@ -107,9 +108,12 @@ for (Phenotype in Traits){
   }else{
   for (OneSNP in SNPsForAnalysis){
     idx <- which(!is.na(SlaughterTraits[,Phenotype]))
-    #model.full <- lmer(((as.numeric(SlaughterTraits[,Phenotype])[idx])/(as.numeric(SlaughterTraits[,"BW.nuchtern"])[idx])) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])) + (as.character(genotypes[,OneSNP])[idx]), REML=FALSE) # qqnorm(resid(model.full)) 
-    model.full <- lmer((as.numeric(SlaughterTraits[,Phenotype])[idx]) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])) + (as.numeric(SlaughterTraits[,"BW.nuchtern"])[idx]) + (as.character(genotypes[,OneSNP])[idx]), REML=FALSE) # qqnorm(resid(model.full)) 
-    model.null <- lmer((as.numeric(SlaughterTraits[,Phenotype])[idx]) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])) + (as.numeric(SlaughterTraits[,"BW.nuchtern"])[idx]), REML=FALSE)
+    model.full <- lmer((as.numeric(SlaughterTraits[,Phenotype])[idx]) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])) + (as.character(genotypes[,OneSNP])[idx]), REML=FALSE) # qqnorm(resid(model.full)) 
+    model.null <- lmer((as.numeric(SlaughterTraits[,Phenotype])[idx]) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])), REML=FALSE)
+    #model.full <- lmer(((as.numeric(SlaughterTraits[,Phenotype])[idx])/(as.numeric(SlaughterTraits[,"BW.nuchtern"])[idx])) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])) + (as.character(genotypes[,OneSNP])[idx]), REML=FALSE) # qqnorm(resid(model.full))
+    #model.null <- lmer(((as.numeric(SlaughterTraits[,Phenotype])[idx])/(as.numeric(SlaughterTraits[,"BW.nuchtern"])[idx])) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])), REML=FALSE)    
+    #model.full <- lmer((as.numeric(SlaughterTraits[,Phenotype])[idx]) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])) + (as.numeric(SlaughterTraits[,"BW.nuchtern"])[idx]) + (as.character(genotypes[,OneSNP])[idx]), REML=FALSE) # qqnorm(resid(model.full)) 
+    #model.null <- lmer((as.numeric(SlaughterTraits[,Phenotype])[idx]) ~ (as.factor(SlaughterTraits[,"Batch"])[idx]) + (1|(as.factor(SlaughterTraits[,"Parents"])[idx])) + (as.numeric(SlaughterTraits[,"BW.nuchtern"])[idx]), REML=FALSE)
     res <- anova(model.null,model.full)
     SNPvar <- SNPvarPerc(model.full)
     EachTraitLod <- rbind(EachTraitLod, c(-log10(res[[8]]),SNPvar))
@@ -154,19 +158,20 @@ par(mfrow=c(4,5))
 title("The association analysis for the Slaughter Traits", outer=TRUE)
 
 #### Selected Slaughter traits
-sst <- c("BW.bratfertig.","Kopf","Hals","Flugel","LegnoSkin","LegnoSkin_bone","BreastnoSkin","Hals.Fett","VisceralFat","TotalFat")
+sst <- c("BW.bratfertig.","Kopf","Hals","Flugel","LegBonemass","LegnoSkin_bone","BreastnoSkin","Hals.Fett","VisceralFat","TotalFat")
 GTlodsst <- GTLod[sst]
-Threshold <- -log10(0.05/(length(sst)*length(SNPsForAnalysis)))
-SigThreshold <- -log10(0.01/(length(sst)*length(SNPsForAnalysis)))
+Threshold <- -log10(0.05/((length(sst)+9)*(length(SNPsForAnalysis)-2)))
+SigThreshold <- -log10(0.01/((length(sst)+9)*(length(SNPsForAnalysis)-2)))
 
 SNPsinfo <- read.table("RawData/SNPsinfo.txt",header=TRUE,sep="\t")
 
-#tiff("Analysis/SlaughterTrait-AllinOne.tif", res = 300,width = 2100, height = 2000, compression = "lzw")
+tiff("Analysis/SlaughterTrait-AllinOne1.tif", res = 300,width = 2100, height = 2000, compression = "lzw")
 #pdf("Analysis/SlaughterTrait-AllinOne.pdf")
 par(mai = c(2.2, 1, 1, 1))
 plot(x=c(as.numeric(SNPsinfo[1,3]-100000),as.numeric(SNPsinfo[9,3]+100000)), y=c(0,10), t="n", ylab="LOD Score", xlab="Physical Position (Mb)", xaxt="n")
+curvecol <- c("darkgray","chartreuse","chartreuse4","cyan","blue","magenta","red","yellow1","darkgoldenrod","darkviolet") 
 for(x in 1:10){
-  points(x= SNPsinfo[,"Location"], y=GTlodsst[[x]][,2],t="l",col=rainbow(10)[x], lwd=1.8)
+  points(x= SNPsinfo[,"Location"], y=GTlodsst[[x]][,2],t="l",col=curvecol[x], lwd=1.8)
 }
 abline(h = Threshold , lty=2, lwd=1.9)
 abline(h = SigThreshold , lty=1, lwd=1.9)
@@ -177,9 +182,9 @@ axis(1, at=seq(69000000,78000000,1000000), c("69","70","71","72","73","74","75",
 points(x=SNPsinfo[,3], y = rep(-0.3,length(SNPsinfo[,3])), pch=17)
 #axis(1, at=SNPsinfo[,3], SNPsinfo[,"Markers"], cex.axis=0.4,las=2)
 
-legend(69250000,-2.8, c("CW","HW","NW","WW","LNS"),lty=1,col=(rainbow(10)[1:5]),horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
-legend(68100000,-3.5, c("LNSB","BNS","SubcAT","ViscAT","WAT"),lty=1,col=(rainbow(10)[6:10]),horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
-#dev.off()
+legend(69250000,-2.8, c("CW","HW","NW","WW","LBM"),lty=1,col=curvecol[1:5],horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
+legend(68100000,-3.5, c("LMW","BMW","SubcAT","ViscAT","WAT"),lty=1,col=curvecol[6:10],horiz = TRUE,xpd = TRUE, bty = "n", lwd=2.2)
+dev.off()
 
 ### Estimate the position of the CI
 
