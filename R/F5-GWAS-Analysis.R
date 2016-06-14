@@ -62,7 +62,21 @@ plot(x = c(1, ncol(pvalues)), y = c(0,10), t='n', main=phe, xlab="LOD Score", yl
 points(x=1:ncol(pvalues),y=-log10(pvalues[phe,]), pch = 19, cex = 0.5, col=chrcols)
 abline(h = -log10(0.1/ncol(pvalues)), col="gray")
 
+### Generate a Q-Q plot
 
+phe <- "BW20W_g"
+
+observed <- sort(pvalues[phe,])
+lobs <- -(log10(observed))
+
+expected <- c(1:length(observed)) 
+lexp <- -(log10(expected / (length(expected))))
+
+
+#pdf("qqplot.pdf", width=6, height=6)
+plot(c(0,7), c(0,7), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,7), ylim=c(0,7), las=1, xaxs="i", yaxs="i", bty="l")
+points(lexp, lobs, pch=23, cex=.4, bg="black") 
+#dev.off()
 
 
 
