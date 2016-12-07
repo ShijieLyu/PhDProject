@@ -6,11 +6,11 @@
 setwd("D:/Chicken/Rdata/qPCR") 
 DataAll <- read.table("RawData/qPCR-housekeeper-test.txt", header=TRUE,sep="\t",na.strings = "",check.names = FALSE)
 
-housekeepers <- c("HPRT","HMBS","ACTB")
+housekeepers <- c("HPRT","HMBS","ACTB","RPL5")
 NHIgroup <- c(432,430,437,427,426)
 WL77group <- c(102,88,78,82,90,94)
 
-par(mfrow=c(3,2))
+par(mfrow=c(4,2))
 for (HP in housekeepers){
   TempHP <- DataAll[which(DataAll[,"Target_Name"]==HP),]
   TempHPNHI <- TempHP[which(TempHP[,"Sample_Name"] %in% NHIgroup),]
