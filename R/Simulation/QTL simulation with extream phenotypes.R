@@ -1,0 +1,3 @@
+QTL simulation
+
+phenotype <- 
