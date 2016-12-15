@@ -54,6 +54,8 @@ if(!file.exists("Analysis/pvaluesGWASforF5chickens.txt")){
 ### Plot the QTL
 
 MarkerInfo <- annotation[which(annotation[,"SNP.ID"] %in% markers),]
+rownames(MarkerInfo) <- MarkerInfo[,1]
+MarkerInfo <- MarkerInfo[markers,]
 pvalues <- pvalues[,MarkerInfo[,"SNP.ID"]]
 
 phe <- "BW20W_g"
