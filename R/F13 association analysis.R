@@ -160,6 +160,31 @@ for(x in 1:9){
   axis(1, at=1:4, SNPsForAnalysis, las=2, cex.axis = 0.77)
 }
 
+## Why QTL at 20 week become higher(7.2 to 8.92)? Effect or accurate?
+par(mfrow=c(2,2))
+F1013 <- QTLdataAll
+F1012 <- QTLdataAll[-which(QTLdataAll[,"Generation"] == "F13"),]
 
+boxplot(QTLdataAll[,"Gew_20Wo"]~ QTLdataAll[,"rs14490774"])
+boxplot(QTLdataAll[-which(QTLdataAll[,"Generation"] == "F13"),"Gew_20Wo"] ~ QTLdataAll[-which(QTLdataAll[,"Generation"] == "F13"),"rs14490774"])
+
+
+### QTL effect size on BW20
+F1013BW20ID <- which(!is.na(F1013[,"Gew_20Wo"]))
+F1013BW20 <- F1013[BW20ID,"Gew_20Wo"]
+F1013BW20Geno <- F1013[BW20ID,"rs14490774"]
+mean(F1013BW20[which(F1013BW20Geno=="CT")])-mean(F1013BW20[which(F1013BW20Geno=="TT")])
+sd(F1013BW20[which(F1013BW20Geno=="CT")])
+sd(F1013BW20[which(F1013BW20Geno=="TT")])
+
+t.test(F1013BW20[which(F1013BW20Geno=="CT")],F1013BW20[which(F1013BW20Geno=="TT")])
+
+F1012BW20ID <- which(!is.na(F1013[,"Gew_20Wo"]))
+F1012BW20 <- F1012[BW20ID,"Gew_20Wo"]
+F1012BW20Geno <- F1012[BW20ID,"rs14490774"]
+mean(F1012BW20[which(F1012BW20Geno=="CT")])-mean(F1012BW20[which(F1012BW20Geno=="TT")])
+sd(F1012BW20[which(F1012BW20Geno=="CT")])
+sd(F1012BW20[which(F1012BW20Geno=="TT")])
+t.test(F1012BW20[which(F1013BW20Geno=="CT")],F1012BW20[which(F1013BW20Geno=="TT")])
 
 
